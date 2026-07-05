@@ -13,13 +13,15 @@ metadata:
 A KAI "job" is a Pod (single) or PodGroup (gang). Its verdict is on the PodGroup's
 `.status.schedulingConditions`, one condition **per node-pool** (`nodePool` names it); read each
 condition's `reasons[]` - the top-level `reason`/`message` are deprecated. Walk the steps in order.
+When a branch points to a `references/` file, read that file and follow it before running
+anything else - the procedure lives there, not here.
 
 ## 1. Rule out non-KAI causes - stop if any holds
 
 - `Running` / `ContainerCreating` / `ImagePullBackOff` / `CrashLoopBackOff` -> not scheduling;
   check the image / volume / app.
 - `SchedulingGated`, `spec.schedulingGates` set, or `Job.spec.suspend: true` -> held by design ->
-  [scheduling-gates](references/scheduling-gates.md).
+  read [scheduling-gates](references/scheduling-gates.md).
 - `spec.schedulerName != kai-scheduler` -> KAI never sees the pod (no PodGroup); set it.
 - unbound PVC, native `ResourceQuota` (not a KAI `Queue`), or cordoned node -> plain Kubernetes,
   not KAI.
@@ -59,12 +61,12 @@ The default message is an aggregated histogram, to get per-node numbers
 Match the per-node reason (or, with just the histogram, the short dimension):
 
 - a node's `capacity` >= request but `used` blocks it -> capacity is held by others -> contention /
-  preemption -> [fair-share](references/fair-share.md).
-- `capacity` < request on every node -> too big for any single node -> [node-fit](references/node-fit.md).
+  preemption -> read [fair-share](references/fair-share.md).
+- `capacity` < request on every node -> too big for any single node -> read [node-fit](references/node-fit.md).
 - a node-affinity / selector / taint predicate reason (not a resource shortage) -> affinity trap ->
-  [node-pool-affinity](references/node-pool-affinity.md).
+  read [node-pool-affinity](references/node-pool-affinity.md).
 - `Resources were found for N pods while M are required for gang scheduling` -> each pod fits but not
-  `minMember` at once -> [gang](references/gang.md).
+  `minMember` at once -> read [gang](references/gang.md).
 - `gpu-fraction` / `gpu-memory` request -> fractional fit isn't decidable here yet. Treat whole-GPU fit as context only.
 
 ## 5. Object path silent - which component's logs

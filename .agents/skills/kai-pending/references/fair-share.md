@@ -1,15 +1,15 @@
 # fair-share: capacity held by others
 
 No typed reason - the verdict stays generic `PodSchedulingErrors` while capacity is held by
-others. Grep scheduler log for additional information, live tail only. Scheduler retries scheduling cycle every `schedule-period` (default=1s) and re-logs the full decision at default verbosity (`-v=3`). 
+others. The reclaim decision surfaces only in the scheduler log - don't recompute fair share,
+read the decision: the scheduler retries every `schedule-period` (default 1s) and re-logs it in
+full at default verbosity (`-v=3`), so a recent tail is enough.
 
 Per-job lines are keyed by PodGroup name (`$PG` from skill step 2), per-queue lines by queue name.
 
 ## 1. Verdict - grep by `$PG`
 
-```bash
-kubectl -n <kai-ns> logs deploy/<scheduler> --tail=100000 | grep "$PG" | tail -30
-```
+Grep the scheduler deployment's log for `$PG` and keep the most recent matches.
 
 `Attempting to allocate job:` must repeat across recent timestamps. Absent ->
 no verdict, never conclude from an empty grep. Then match:
@@ -30,9 +30,7 @@ the beneficiary.
 
 ## 2. Over fair share - explain with the scheduler's numbers
 
-```bash
-kubectl -n <kai-ns> logs deploy/<scheduler> --tail=100000 | grep "Resource division result for queue <$QUEUE>" | tail -1
-```
+Grep the same log for `Resource division result for queue <$QUEUE>`, last match is current.
 
 Prints deserved / requested / maxAllowed / allocated / historicalUsage / fairShare per resource;
 the divided pool is `Total allocatable resources are <...>`.
